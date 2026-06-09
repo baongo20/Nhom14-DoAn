@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
-  AreaChart,
+  // AreaChart,
   Area,
   XAxis,
   YAxis,
@@ -67,27 +67,36 @@ export const LiveChart: React.FC<LiveChartProps> = ({
 
   const currentConfig = configs[activeMetric];
 
-  // Build chart data with prediction overlay points
-  const chartData = [...history];
+  // Build chart data with prediction overlay points (memoized)
+  const chartData = useMemo(() => {
+    const data = [...history];
 
-  // Add prediction future points if available
-  if (showPrediction && predictions.length > 0 && history.length > 0) {
-    const lastPoint = history[history.length - 1];
-    predictions.forEach((pred, i) => {
-      const futureTime = new Date();
-      futureTime.setSeconds(futureTime.getSeconds() + (i + 1) * 0.5);
-      const timeStr = futureTime.toTimeString().split(" ")[0];
+    // Add prediction future points if available
+    if (showPrediction && predictions.length > 0 && history.length > 0) {
+      const lastTime = history.length > 0
+        ? new Date(history[history.length - 1].timeStr)
+        : new Date();
+      const baseMs = lastTime instanceof Date && !isNaN(lastTime.getTime())
+        ? lastTime.getTime()
+        : Date.now();
 
-      const predPoint: HistoryPoint = {
-        timeStr,
-        cpu: pred.cpu_usage,
-        memory: pred.memory_usage,
-        temp: pred.cpu_temperature,
-        power: pred.cpu_power,
-      };
-      chartData.push(predPoint);
-    });
-  }
+      predictions.forEach((pred, i) => {
+        const futureTime = new Date(baseMs + (i + 1) * 500);
+        const timeStr = futureTime.toTimeString().split(" ")[0];
+
+        const predPoint: HistoryPoint = {
+          timeStr,
+          cpu: pred.cpu_usage,
+          memory: pred.memory_usage,
+          temp: pred.cpu_temperature,
+          power: pred.cpu_power,
+        };
+        data.push(predPoint);
+      });
+    }
+
+    return data;
+  }, [history, predictions, showPrediction]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

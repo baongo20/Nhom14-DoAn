@@ -34,30 +34,43 @@ monitor = SystemMonitor()
 # Initialize the AI inference engine
 inference_engine = InferenceEngine()
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the inference engine on server startup."""
-    logger.info("Initializing AI inference engine...")
-    # Run model loading in a thread to avoid blocking startup
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, inference_engine.initialize)
-    logger.info(f"Inference engine ready. Model active: {inference_engine.model_active}")
-
-    # ── Serve built frontend (from frontend/dist) ──────────────────────────
+# ── Helper to mount frontend static files ─────────────────────────────
+def _mount_frontend():
+    """Mount the built frontend dist directory at the root path."""
     # main.py is at backend/app/main.py, so go up 3 levels to reach project root
     frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "frontend", "dist")
     if os.path.isdir(frontend_dist):
-        # Only mount if not already mounted (avoid duplicate on reload)
+        # Check if already mounted (avoid duplicate on reload)
         already_mounted = any(
             route.path == "/" and hasattr(route, "app")
             for route in app.routes
         )
         if not already_mounted:
-            from fastapi.staticfiles import StaticFiles
             app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
             logger.info(f"Serving frontend from {frontend_dist}")
     else:
         logger.warning(f"Frontend dist not found at {frontend_dist}. Run 'npm run build' in frontend/ first.")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Mount frontend immediately, then load AI model in background."""
+    # 1. Mount frontend static files FIRST — so the server responds right away
+    _mount_frontend()
+
+    # 2. Start model loading in background (does not block the event loop)
+    logger.info("Starting background AI inference engine initialization...")
+
+    async def _load_model_background():
+        """Load the TF model in a thread executor so it doesn't block startup."""
+        try:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, inference_engine.initialize)
+            logger.info(f"Inference engine ready. Model active: {inference_engine.model_active}")
+        except Exception as e:
+            logger.error(f"Background model loading failed: {e}")
+
+    asyncio.create_task(_load_model_background())
 
 # Trigger an initial check to populate baseline IO and processes
 try:

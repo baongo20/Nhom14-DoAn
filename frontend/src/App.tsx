@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ShieldAlert, Cpu } from 'lucide-react';
+import {
+  // ShieldAlert, 
+  Cpu } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { AnomalyAlert } from './components/AnomalyAlert';
 import type { WsPayload, HistoryPoint, AnomalyData, PredictedMetrics } from './types';
@@ -154,9 +156,20 @@ export function App() {
         reconnectTimeoutRef.current = null;
       }
       if (wsRef.current) {
-        wsRef.current.onclose = null; // Prevent onclose from firing after unmount
-        wsRef.current.onerror = null;
-        wsRef.current.close();
+        // Only close if already open; if still CONNECTING, detach handlers
+        // and let the connection complete or fail naturally to avoid
+        // "WebSocket is closed before the connection is established" warnings.
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.onclose = null;
+          wsRef.current.onerror = null;
+          wsRef.current.close();
+        } else {
+          // Still connecting — detach handlers so onclose won't trigger reconnect
+          wsRef.current.onopen = null;
+          wsRef.current.onclose = null;
+          wsRef.current.onerror = null;
+          wsRef.current.onmessage = null;
+        }
         wsRef.current = null;
       }
     };

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Thermometer,
-  Cpu,
+  // Cpu,
   HardDrive,
   Activity,
   X,

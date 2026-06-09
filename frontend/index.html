@@ -6,8 +6,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="A premium real-time hardware monitoring system for Windows, delivering high-fidelity CPU utilization, memory allocations, core temperatures, and battery stats via high-res WebSockets." />
     <title>Pulse Monitor - Windows Real-time Hardware Telemetry</title>
+    <style>
+      /* ── Initial loading screen (shown before React mounts) ────────────── */
+      #loading-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: #030712;
+        color: #e2e8f0;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        transition: opacity 0.4s ease-out;
+      }
+      #loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 4px solid rgba(99, 102, 241, 0.1);
+        border-top-color: #6366f1;
+        animation: spin 0.8s linear infinite;
+      }
+      .loading-pulse {
+        width: 20px;
+        height: 20px;
+        color: #818cf8;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      .loading-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+      }
+      .loading-sub {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        max-width: 280px;
+        text-align: center;
+        line-height: 1.5;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+      }
+    </style>
   </head>
   <body class="bg-[#030712] text-slate-100">
+    <!-- ── Inline loading screen (visible immediately, hidden by React) ── -->
+    <div id="loading-screen">
+      <div class="loading-spinner"></div>
+      <svg class="loading-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+      <div class="loading-title">Synchronizing Telemetry Channels</div>
+      <div class="loading-sub">Connecting to native FastAPI service on Windows&hellip; Ensure Python backend is running.</div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

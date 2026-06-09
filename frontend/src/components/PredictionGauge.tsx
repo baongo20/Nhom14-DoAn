@@ -21,7 +21,7 @@ export const PredictionGauge: React.FC<PredictionGaugeProps> = ({
 
   // Get the last predicted value (furthest forecast)
   const lastPredicted = predictions[predictions.length - 1][metricKey];
-  const nextPredicted = predictions[0][metricKey];
+  // const nextPredicted = predictions[0][metricKey];
 
   // Calculate trend
   const trend = lastPredicted - currentValue;
